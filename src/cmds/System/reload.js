@@ -5,6 +5,7 @@ module.exports = class extends Command {
       enabled: true,
       description: 'Reloads a part of the bot.',
       emitError: true,
+      aliases:['r'],
       flags:[
         {
           flag: 'type',
@@ -15,7 +16,6 @@ module.exports = class extends Command {
   }
   async run(message, permCalc, args){
     if (!args[0]) return this.error(1, message.settings.prefix);
-
     
     if (message.flags.type) {
       // This is a big reload

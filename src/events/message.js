@@ -206,7 +206,9 @@ module.exports = async (client, message) => {
 
   try {
     let res = await cmd.run(message, permCalc, args);
-    if(res) await message.channel.send({embed:res});
+    if(res){
+      await message.channel.send({embed:{color:'GREEN', ...res}});
+    } 
   } catch (e) {
     if(cmd.emitError) await message.channel.send({embed: {color:'RED', author: {name: 'An error occured'}, description: e.message}});
     console.error(e);

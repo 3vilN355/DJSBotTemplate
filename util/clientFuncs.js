@@ -24,13 +24,17 @@ module.exports = client => {
   };
 
   client.unloadCommand = (commandName, reload = true) => {
-    if(client.commands.has(commandName)){
-      let moduleName = client.commands.get(commandName).module;
+    if(client.commands.has(commandName) || client.aliases.has(commandName)){
+      let command = client.commands.get(commandName) || client.commands.get(client.aliases.get(commandName));
+      let moduleName = command.module;
       if(moduleName == 'Unknown') throw new Error('Command is in unknown module!');
       else {
-        delete require.cache[require.resolve(`${process.cwd()}/src/cmds/${moduleName}/${commandName}.js`)];
-        client.commands.delete(commandName);
-        if(reload) client.loadCommand(moduleName, commandName);
+        delete require.cache[require.resolve(`${process.cwd()}/src/cmds/${moduleName}/${command.name}.js`)];
+        for(let alias of command.aliases){
+          client.aliases.delete(alias);
+        }
+        client.commands.delete(command.name);
+        if(reload) client.loadCommand(moduleName, command.name);
       }
       return;
     }
