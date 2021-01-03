@@ -35,6 +35,7 @@ module.exports = async (client, reaction, user) => {
       }).save());
 
       await channel.edit({name:`Ticket-${String(ticketID).padStart(5, 0)}`});
+      await reaction.users.remove(user.id);
     }
   } else if(reaction.emoji.name == '🔒'){
     const ticket = await Ticket.findOne({reactionMessageID: reaction.message.id, isActive: true});
