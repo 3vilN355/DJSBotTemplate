@@ -22,7 +22,7 @@ module.exports = async (client, reaction, user) => {
         ]
       });
 
-      const msg = await channel.send({embed: {color: 'GREEN', description:'React with 🔒 to close the ticket\nReact with <:tickYes:703915536492396544> to claim the ticket'}});
+      const msg = await channel.send(`New ticket opened by ${user}!`, {embed: {color: 'GREEN', description:'React with 🔒 to close the ticket\nReact with <:tickYes:703915536492396544> to claim the ticket'}});
       await msg.react('🔒');
       await msg.react('703915536492396544');
       let ticketID = await client.getNext('Ticket');
@@ -39,13 +39,16 @@ module.exports = async (client, reaction, user) => {
   } else if(reaction.emoji.name == '🔒'){
     const ticket = await Ticket.findOne({reactionMessageID: reaction.message.id, isActive: true});
     if(ticket){
-      let msg = await reaction.message.channel.send(`${user} has just locked the ticket!\nClick the <:tickNo:703915536756506665> to delete the ticket!`);
-      await reaction.message.channel.updateOverwrite(user.id, {VIEW_CHANNEL: false});
-      ticket.lockedBy = [...ticket.lockedBy, user.id];
-      ticket.isActive = false;
-      ticket.deleteMessageID = msg.id;
-      await msg.react('703915536756506665');
-      await ticket.save();
+      // We don't allow the user themselves to claim the ticket
+      if(ticket.userID !== user.id){
+        let msg = await reaction.message.channel.send(`${user} has just locked the ticket!\nClick the <:tickNo:703915536756506665> to delete the ticket!`);
+        await reaction.message.channel.updateOverwrite(user.id, {VIEW_CHANNEL: false});
+        ticket.lockedBy = [...ticket.lockedBy, user.id];
+        ticket.isActive = false;
+        ticket.deleteMessageID = msg.id;
+        await msg.react('703915536756506665');
+        await ticket.save();
+      }
     }
   } else if (reaction.emoji.id == '703915536492396544'){ // tickYes, claim
     const ticket = await Ticket.findOne({reactionMessageID: reaction.message.id, isActive: true, isClaimed: false});
