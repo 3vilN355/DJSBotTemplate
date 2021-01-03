@@ -29,18 +29,18 @@ module.exports = class {
     return;
   }
 
-  async identifyArgs(...args){
+  async identifyArgs(args, guild){
     let out = [];
     for(let arg of args) {
-      out.push(await this.identifyArg(arg));
+      out.push(await this.identifyArg(arg, guild));
     }
     return out;
   }
 
-  async identifyArg(arg){
+  async identifyArg(arg, guild){
     let id;
 
-    id = await this.getChannelID(arg);
+    id = await this.getChannelID(arg, guild);
     if(id) return {type: 'ChannelID', id};
 
     id = await this.getGuildID(arg);
@@ -52,10 +52,10 @@ module.exports = class {
     return;
   }
 
-  async getChannelID(arg = ''){
+  async getChannelID(arg = '', guild){
     let ID = arg.match(/\d{17,19}/);
     if(ID){
-      if(this.client.channels.cache.has(ID[0])) return ID[0];
+      if((guild?guild:this.client).channels.cache.has(ID[0])) return ID[0];
     }
     return false;
   }
@@ -73,6 +73,16 @@ module.exports = class {
     if(ID){
       let user = await this.client.users.fetch(ID[0]).catch(() => {});
       if(user) return user.id;
+    }
+    return false;
+  }
+  
+  async getRoleID(arg = '', guild){
+    if(!guild) return false;
+    let ID = arg.match(/\d{17,19}/);
+    if(ID){
+      let role = await guild.roles.fetch(ID[0]).catch(() => {});
+      if(role) return role.id;
     }
     return false;
   }

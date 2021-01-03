@@ -3,7 +3,7 @@ let MessageFilter = require('../../util/messageFilter');
 module.exports = async (client, message) => {
   // Is it a partial?
   if(message.partial) {
-    // TODO Fetch it
+    message = await message.fetch();
   }
   // Any bot responses?
   if(message.author.bot) return;

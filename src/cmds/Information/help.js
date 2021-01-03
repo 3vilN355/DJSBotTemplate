@@ -7,6 +7,7 @@ module.exports = class extends Command {
       emitError: true,
     });
   }
+  // eslint-disable-next-line no-unused-vars
   async run(message, permCalc, args){
 
   }

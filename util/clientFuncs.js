@@ -1,6 +1,7 @@
 require('colors');
 const moment = require('moment');
 const Command = require('../src/classes/Command');
+const Counter = require('../src/models/Counter');
 module.exports = client => {
   client.developers = [];
   if(client.dev){
@@ -55,6 +56,10 @@ module.exports = client => {
         client.aliases.set(alias, commandName);
       }
     }
+  };
+
+  client.getNext = async (_id) => {
+    return (await Counter.findOneAndUpdate({_id}, {$inc:{num:1}}, {upsert:true, setDefaultsOnInsert:true, new:true}).lean()).num;
   };
 
   client.isClass = (input) => {
