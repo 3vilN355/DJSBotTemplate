@@ -1,23 +1,25 @@
 require('dotenv').config();
 const Discord = require('discord.js');
-// const CommandManager = require('./CommandManager.js');
+const CommandManager = require('../util/CommandManager.js');
 const DatabaseHelper = require('./DBHelper.js');
 const fs = require('fs');
 const klaw = require('klaw');
 const path = require('path');
 
 const mongoose = require('mongoose');
-mongoose.connect(process.env.mongodb_connection_string, {useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true});
+mongoose.connect(process.env.mongodb_connection_string, {useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true, useFindAndModify: false});
 
 class Client extends Discord.Client {
   constructor(options = {}){
     super(options);
     if(options.dev) this.dev = true;
     this.settings = new Discord.Collection();
+    this.commands = new Discord.Collection();
+    this.aliases = new Discord.Collection();
 
     this.db = mongoose.connection;        
     this.dbHelper = new DatabaseHelper(this);
-    // this.commandManager = new CommandManager(this);
+    this.commandManager = new CommandManager(this);
     require('../util/clientFuncs')(this);
 
     this.events();
@@ -40,6 +42,21 @@ class Client extends Discord.Client {
       const event = require(`./events/${evtFile.name}${evtFile.ext}`);
       this.on(evtFile.name, event.bind(null, this));
     });
+
+    klaw('./src/cmds')
+      .on('data', (item) => {
+        try {
+          const file = path.parse(item.path);
+          if (!file.ext || file.ext !== '.js') return;
+          // Get the module
+          let module = file.dir.split('\\');
+          module = module[module.length-1];
+          this.loadCommand(module, file.name);
+        } catch (err) {
+          // console.log(err);
+          console.log(err.message);
+        }
+      });
   }
 
   initialize(data){

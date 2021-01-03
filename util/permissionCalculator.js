@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 module.exports = class {
   constructor(client, settings, member){
     this.client = client;
@@ -6,7 +7,12 @@ module.exports = class {
     this.member = member;
   }
 
-  get wildcards(){
+  get useWildcards(){
     return this.allowAll || this.__wildcard;
+  }
+
+  allowsCommand(commandName){
+    if(this.allowAll) return true;
+    return false; // Temporarily
   }
 };

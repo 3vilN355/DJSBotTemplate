@@ -1,47 +1,50 @@
-exports.run = async (client, message, args) => {// eslint-disable-line no-unused-vars
-  if (!args || !args[0]) return {error: 1};
-  if (/\./.test(args[0])) {
-    // There's a dot. This is a big reload
-    let split = args[0].split('.');
-    if(split[0] == 'events'){
-      // Reload an event
-      let allowedEvents = ['message'];
-      if(allowedEvents.includes(split[1])){
-        delete require.cache[require.resolve(`../../events/${split[1]}`)];
-        client.removeAllListeners(['message']);
-        let event = require(`../../events/${split[1]}`);
-        client.on('message', event.bind(null, client));
-      } else {
-        return {error:'`No such event listener'};
-      }
-      return {description: `${split[1]} listener reloaded`};
-    }
-    if (args[0].toLowerCase() == 'util.functions') {
-      delete require.cache[require.resolve(`${process.cwd()}/util/functions.js`)];
-      require('../../../util/functions')(client);
-      return {description: 'Functions reloaded'};
-    }
-  } else {
-    const {err, res} = await client.unloadCommand(args[0]);
-    if (err) return {error: 'Error while unloading command', description: `Error given is: ${err}`};
-
-
-    const bdy = client.loadCommand(res[0], res[1]);
-    if (bdy.err) return {error: 'Error Loading', description: `${bdy.err}`};
-
-    return {description: `The command \`${res[1]}\` has been reloaded`};
+let Command = require('../../classes/Command');
+module.exports = class extends Command {
+  constructor(...args) {
+    super(...args, {
+      enabled: true,
+      description: 'Reloads a part of the bot.',
+      emitError: true,
+      flags:[
+        {
+          flag: 'type',
+          args: 1
+        }
+      ],
+    });
   }
-};
+  async run(message, permCalc, args){
+    if (!args[0]) return this.error(1, message.settings.prefix);
 
-exports.conf = {
-  enabled: true,
-  guildOnly: false,
-  aliases: [],
-  permLevel: 'Bot Owner',
-};
-
-exports.help = {
-  name: 'reload',
-  description: 'Reloads a command that"s been modified.',
-  usage: 'reload <command>',
+    
+    if (message.flags.type) {
+      // This is a big reload
+      let type = message.flags.type[0];
+      if(type == 'event'){
+        // Reload an event
+        let allowedEvents = ['message'];
+        if(allowedEvents.includes(args[0])){
+          delete require.cache[require.resolve(`../../events/${args[0]}`)];
+          this.client.removeAllListeners([args[0]]);
+          let event = require(`../../events/${args[0]}`);
+          this.client.on(args[0], event.bind(null, this.client));
+        } else {
+          return this.error(0, 'No such event listener');
+        }
+        return {description: `${args[0]} listener reloaded`};
+      } else if(type == 'util'){
+        // TODO Before deleting from cache, remove all old functions from the file
+        delete require.cache[require.resolve(`${process.cwd()}/util/clientFuncs.js`)];
+        require('../../../util/functions')(this.client);
+        return {description: 'Util reloaded'};
+      } else return this.error(0, 'There\'s no such type');
+    } else {
+      try {
+        this.client.unloadCommand(args[0]);
+        return {description: `Reloaded command \`${args[0]}\``, color:'GREEN'};
+      } catch (e) {
+        return this.error(0, `Error while reloading command: ${e.message}`);
+      }
+    }
+  }
 };
