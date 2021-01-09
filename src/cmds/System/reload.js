@@ -5,6 +5,7 @@ module.exports = class extends Command {
       enabled: true,
       description: 'Reloads a part of the bot.',
       emitError: true,
+      allowedIn: 0b11,
       aliases:['r'],
       flags:[
         {

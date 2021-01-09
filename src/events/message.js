@@ -30,33 +30,21 @@ module.exports = async (client, message) => {
   if(filter.shouldDelete) await message.delete();
   if(filter.shouldStop) return;
 
-  let permCalc = new PermissionCalculator(client, message.settings, message.member);
+  let permCalc = new PermissionCalculator(client, message);
 
-  // Do the settings contain wildcards?
+  // Save old content in case wildcards change it
   message.oldContent = message.content;
+  // Do the settings contain wildcards?
   if((message.settings.wildcards||[]).length > 0){
-    // What are the wildcards?
-    let wildcards = message.settings.wildcards;
-    // Does the author of the message have the ability to use wildcards?
-    if(permCalc.useWildcards){
-      // Does the message contain any wildcards?
-      message.settings.wildcards.forEach(wildcard => {
+    message.settings.wildcards.forEach(wildcard => {
+      // Does the author of the message have the ability to use this wildcard?
+      if(permCalc.useWildcard(wildcard)){
         let smallReplace = wildcard.wildcard.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
         let replaceRegex = smallReplace+' +([^ ]*)'.repeat(wildcard.argumentsToInclude);
         if((new RegExp(smallReplace)).test(message.content)) message.hasWildcard = true; 
         message.content = message.content.replace(new RegExp(replaceRegex), wildcard.replaceRegex);
-      });
-      let filtered = message.content.split(' ').filter(arg => wildcards.find((wildcard) => wildcard.full == arg));
-      if(filtered.length >= 1){
-        // Lets turn the wildcards into the actual wildcards
-        filtered = filtered.map(wc => wildcards.find((wildcard) => wildcard.full == wc));
-        // There can not be more than 1 initiator wildcard
-        // if(filtered.reduce((acc, curr) => curr.initiator?acc+1:acc,0) <= 1){
-        //   // Only one initiator wildcard identified. Proceed with running the wildcards
-        //   // TODO
-        // }
       }
-    }
+    });
   }
 
   // After doing wildcard shit, identify if the message is using a ping prefix
@@ -69,15 +57,16 @@ module.exports = async (client, message) => {
   }
   
   // At this point, we filter out any non-commands
-
-  // Test
-
   if(message.content.indexOf(message.settings.prefix) !== 0) return;
   let args = message.content.slice(message.settings.prefix).trim().split(/ +/g);
   const command = args.shift().toLowerCase().substring(message.settings.prefix.length);
   let oldArgs;
+  let oldCMD;
   if(message.hasWildcard){
     oldArgs = message.oldContent.slice(message.settings.prefix).trim().split(/ +/g);
+    oldCMD = oldArgs.shift().toLowerCase().substring(message.settings.prefix.length);
+    
+    message.oldArgs = oldArgs;
   }
 
   // Is it a valid command?
@@ -86,6 +75,10 @@ module.exports = async (client, message) => {
   let cmd;
   if(client.commands.has(command)) cmd = client.commands.get(command);
   else cmd = client.commands.get(client.aliases.get(command));
+
+  // Is the command even allowed in this context?
+  if(isDM && !(cmd.allowedIn & 0b1)) return;
+  if(!isDM && !(cmd.allowedIn & 0b10)) return;
 
   // Is the command disabled?
   if(!cmd.enabled){
@@ -194,10 +187,26 @@ module.exports = async (client, message) => {
 
 
 
-  // Check if the permCalc allows for running this message
-  if(!permCalc.allowsCommand(command)){
+  // Is the user allowed to run this command?
+  // If the user used a wildcard to run the command
+  if(message.hasWildcard){
+    
+    // they obviously have permission to run the command through the wildcard
+    if(oldCMD === command){
+      // If they used the command originally
+      if(!permCalc.allowsCommand(cmd)){
+        // They're not allowed. Do they get a warning about it?
+        if(permCalc.denyAnnouncement){
+          // TODO
+          message.channel.send(permCalc.denyAnnouncement);
+        }
+        return;
+      }
+    }
+    // If they didn't use the command originally, let them through
+  } else if(!permCalc.allowsCommand(cmd)){
     // They're not allowed. Do they get a warning about it?
-    if(permCalc.shouldAnnounceDeny){
+    if(permCalc.denyAnnouncement){
       // TODO
       message.channel.send(permCalc.denyAnnouncement);
     }

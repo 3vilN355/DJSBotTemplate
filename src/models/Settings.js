@@ -7,7 +7,7 @@ const settingsSchema = Schema({
   _id: String,
   prefix: { type: String, default: 'w.' },
   wildcards: [{ type: Schema.Types.ObjectId, ref: 'Wildcard'}],
-  // commands: [{ type: Schema.Types.ObjectId, ref: 'Command' }],
+  permissionLevels: [{permissionLevel: Number, roles: Array}],
   channels: {
     // Default channels which every guild could use
     welcome: { type: String }

@@ -4,6 +4,7 @@ const ticketSystemSchema = Schema({
   messageID: {type: String, index:true},
   guildID: {type: String},
   roles: {type: Array},
+  initialMessage: Object,
   parentID: {type: String},
 }, {timestamps:true});
 

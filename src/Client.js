@@ -62,9 +62,8 @@ class Client extends Discord.Client {
   initialize(data){
     // Initialize, use the DB data for something
     // This can't be client-reliant data, as the client isn't initialized yet.
-    
     // Do we save some to client?
-    if(data.settings) this.settings.set('default', data.settings);
+    this.settings.set('default', data);
 
     return data;
   }

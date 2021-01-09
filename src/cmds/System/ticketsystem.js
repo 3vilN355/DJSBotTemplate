@@ -25,6 +25,10 @@ module.exports = class extends Command {
     msg = (await message.channel.awaitMessages(filter, { max : 1 })).first();
     const roles = msg.content.split(/,\s*/g);
     await msg.delete();
+    await que.edit('What message do you want to be sent in the channel when the ticket is created?\nUse {{user}} to signify a ping of the user');
+    msg = (await message.channel.awaitMessages(filter, { max : 1 })).first();
+    const content = msg.content;
+    await msg.delete();
     if(fetchMsg && categCH){
       for(const roleID of roles)
         if (!message.guild.roles.cache.has(roleID)) throw new Error(`Role ${roleID} does not exist`);
@@ -34,6 +38,7 @@ module.exports = class extends Command {
         guildID: message.guild.id,
         roles,
         parentID: categCH.id,
+        initialMessage: {content},
       }).save());
 
       await fetchMsg.react('🎫');

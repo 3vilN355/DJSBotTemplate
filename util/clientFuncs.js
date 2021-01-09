@@ -3,11 +3,11 @@ const moment = require('moment');
 const Command = require('../src/classes/Command');
 const Counter = require('../src/models/Counter');
 module.exports = client => {
-  client.developers = [];
+  client.developers = ['136985027413147648'];
   if(client.dev){
     // Assign developer IDs
     // I'm not sure where to store these so I'll just hardcode for now
-    client.developers = ['136985027413147648'];
+    client.developers.push(['136985027413147648']);
   }
 
   client.log = (type, msg, title) => {
@@ -62,6 +62,22 @@ module.exports = client => {
     return (await Counter.findOneAndUpdate({_id}, {$inc:{num:1}}, {upsert:true, setDefaultsOnInsert:true, new:true}).lean()).num;
   };
 
+  client.permLevel = (user, member) => {
+    if(client.developers.includes(user.id)) return 15;
+    if(!member) return 0;
+    if(member.guild.ownerID == member.id) return 10;
+    if(!client.settings.has(member.guild.id)) return 0;
+    
+    let sPermLevel = 0;
+    for(let permLevel of client.settings.get(member.guild.id).permissionLevels.sort((a, b) => a.permLevel-b.permLevel)){
+      if(sPermLevel) break;
+      if(permLevel.roles.some(r => member.roles.cache.has(r))) sPermLevel = permLevel.permissionLevel;
+    }
+    if(sPermLevel < 7 && member.hasPermission(8)) return 7;
+    else if(sPermLevel < 6 && member.hasPermission(32)) return 6;
+    else return sPermLevel;
+  };
+
   client.isClass = (input) => {
     return typeof input === 'function' &&
         typeof input.prototype === 'object' &&
@@ -73,7 +89,6 @@ module.exports = client => {
       await callback(array[index], index, array);
     }
   };
-  
 
   String.prototype.toHex = function() {
     var hash = 0;

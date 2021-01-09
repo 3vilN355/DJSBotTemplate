@@ -7,6 +7,10 @@ module.exports = class extends Command {
       aliases: ['wc'],
       description: 'Manages wildcards for the server',
       usages: ['list', 'create <wildcard> <replacementString>', 'delete <wildcard>', 'edit <wildcard>'],
+      flags: [
+        {flag:'level',
+          args:1}
+      ],
       deleteFlagsFromArgs: false,
       emitError: true,
     });
@@ -15,8 +19,8 @@ module.exports = class extends Command {
     // Lets identify the mandatory args
     if(!args[0]) return this.error(1, message.settings.prefix);
     if(args[0].toLowerCase() == 'delete'){
-      if(!args[1]) return this.error(1, message.settings.prefix);
-      let WCToDelete = args[1];
+      if(!message.oldArgs[1]) return this.error(1, message.settings.prefix);
+      let WCToDelete = message.oldArgs[1];
       // Lets find this wildcard
       let wc = (message.settings.wildcards||[]).find(wc => wc.wildcard == WCToDelete);
       if(wc){
@@ -44,15 +48,30 @@ module.exports = class extends Command {
       }
       // Generate regex from content
       let i = 1;
-      while(replace.split(/ +/g).find(arg => /%%/.test(arg))){
-        replace = replace.replace('%%',`$${i}`);
+      replace = replace.join(' ');
+      while(/%%/.test(replace)){
+        replace = replace.replace(/%%/,`$${i}`);
         i++;
       }
+      let permObj = {
+        permLevel: Math.min(permCalc.permLevel, 6), // What's the default perm level for wildcards?
+      };
+      if(message.flags){
+        if(message.flags.level){
+          // Parse level and set it as permlevel
+          let permLevel = Number.parseInt(message.flags.level[0]);
+          if(isNaN(permLevel) || permLevel < 0 || permLevel > 10) return this.error(0, 'The -level flag requires a number from 0 to 10 (like `-level 4`)');
+          if(permLevel > permCalc.permLevel) return this.error(0, `You can't set a wildcard permlevel higher than your own (${permCalc.permLevel})`);
+          permObj.permLevel = permLevel;
+        }
+      }
+      let permission = await this.client.dbHelper.insertPermission(permObj);
       let wcObj = {
         guild: message.guild.id,
         wildcard: init,
         argumentsToInclude: i-1,
-        replaceRegex: replace
+        replaceRegex: replace,
+        permission
       };
       await this.client.dbHelper.insertWildcard(wcObj);
   

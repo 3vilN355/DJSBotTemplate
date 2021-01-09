@@ -43,7 +43,7 @@ module.exports = async (client, reaction, user) => {
       // We don't allow the user themselves to claim the ticket
       if(ticket.userID !== user.id){
         let msg = await reaction.message.channel.send(`${user} has just locked the ticket!\nClick the <:tickNo:703915536756506665> to delete the ticket!`);
-        await reaction.message.channel.updateOverwrite(user.id, {VIEW_CHANNEL: false});
+        await reaction.message.channel.updateOverwrite(ticket.userID, {'VIEW_CHANNEL': false}).catch(() => {});
         ticket.lockedBy = [...ticket.lockedBy, user.id];
         ticket.isActive = false;
         ticket.deleteMessageID = msg.id;

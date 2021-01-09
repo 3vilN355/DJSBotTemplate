@@ -41,7 +41,7 @@ module.exports = class extends Command {
     } else if(args[0] == 'todo') {
       let [name, desc] = args.slice(1).join(' ').split(/\|/);
       let res = await trello.addCard(name, desc, todoListID);
-      if(message.flags) {
+      if(message.flags.length > 0) {
         // Add a label to it probably
         // Get priority custom field
         let temp = await trello.getCustomFieldsOnBoard(boardID);

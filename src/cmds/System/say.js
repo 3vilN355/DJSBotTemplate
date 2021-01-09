@@ -14,10 +14,13 @@ module.exports = class extends Command {
       },{
         flag: 'title',
         untilNextFlag: true,
+      },{
+        flag: 'd'
       }]
     });
   }
   async run(message, permCalc, args){
+    if(message.flags?.d) await message.delete().catch(() => {});
     if(!args[0] && !(message.flags.e && message.flags.title)) return this.error(1, message.settings.prefix);
     if(message.flags.e){
       let emb = {description:args.join(' ')};

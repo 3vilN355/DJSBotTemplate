@@ -4,8 +4,8 @@ module.exports = class {
     this.module = module || 'Unknown';
     this.name = options.name || name;
     this.aliases = options.aliases || [];
-    this.permLevel = options.permLevel || 'Bot Owner';
-    this.allowedIn = options.allowedIn || 'Guild';
+    this.permLevel = options.permLevel || 15;
+    this.allowedIn = options.allowedIn || 0b10; // Bitwise. 10 is guild, 01 is dm, 11 is both obviously
     this.description = options.description || 'No description given';
     this.emitError = options.emitError || false;
     this.flags = options.flags || [];
@@ -48,6 +48,11 @@ module.exports = class {
 
     id = await this.getUserID(arg);
     if(id) return {type: 'UserID', id};
+
+    if(guild) {
+      id = await this.getRoleID(arg, guild);
+      if(id) return {type: 'RoleID', id};
+    }
     
     return;
   }
@@ -87,7 +92,7 @@ module.exports = class {
     return false;
   }
 
-  usageToSting(prefix){
+  usageToString(prefix){
     if(this.usages){
       return this.usages.map(u => `\`${prefix}${this.name} ${u}\``).join('\n');
     } else return `${prefix}${this.name} ${this.usage}`.trim();
@@ -97,7 +102,11 @@ module.exports = class {
     if(errNum == 0){
       return {color: 'RED', title, description};
     } else if(errNum == 1){
-      return {color: 'RED', title: 'Not enough arguments!', description: `Command usage:\n${this.usageToSting(description)}`};
+      return {color: 'RED', title: 'Not enough arguments!', description: `Command usage:\n${this.usageToString(description)}`};
+    } else if(errNum == 2){
+      let e = {color: 'RED', title: 'Invalid argument!', description: `Command usage:\n${this.usageToString(description)}`}
+      if(title != 'An error occured') e.description += `\n\n${title}`;
+      return e;
     }
   }
 };
